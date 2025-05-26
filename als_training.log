@@ -1,0 +1,7 @@
+2025-05-20 13:56:51,568 - INFO - Loading and preparing data...
+2025-05-20 13:56:51,568 - ERROR - Data preparation failed: [Errno 13] Permission denied: 'processed_data/cleaned_reviews.csv'
+2025-05-20 13:56:51,568 - ERROR - Training failed: [Errno 13] Permission denied: 'processed_data/cleaned_reviews.csv'
+2025-05-20 14:16:25,727 - INFO - Starting ALS Training Process
+2025-05-20 14:16:25,727 - INFO - Attempting to load data from C:\Users\ziad\projects\project recommendation\processed_data\cleaned_reviews.csv
+2025-05-20 14:16:25,738 - ERROR - Data preparation failed: [Errno 13] Permission denied: 'C:\\Users\\ziad\\projects\\project recommendation\\processed_data\\cleaned_reviews.csv'
+2025-05-20 14:16:25,739 - ERROR - Training process failed: [Errno 13] Permission denied: 'C:\\Users\\ziad\\projects\\project recommendation\\processed_data\\cleaned_reviews.csv'
