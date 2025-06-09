@@ -4,3 +4,4 @@ processed_data
 recommendation_debug.log
 scripts/__pycache__
 scripts/old
+als_training.log

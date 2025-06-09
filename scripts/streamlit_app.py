@@ -31,6 +31,69 @@ def load_recommendation_engine(csv_path):
         st.error(f"Failed to load recommendation engine: {e}")
         return None
 
+def prepare_user_dropdown_data(engine):
+    """Prepare data for user dropdown with ranking and sorted by activity"""
+    if not hasattr(engine, 'df'):
+        return [], {}
+    
+    # Calculate user activity metrics
+    user_stats = engine.df.groupby('userId').agg({
+        'score': ['count', 'mean'],
+        'timestamp': ['min', 'max']
+    }).reset_index()
+    
+    # Flatten multi-index columns
+    user_stats.columns = [
+        'userId', 
+        'review_count', 
+        'avg_rating',
+        'first_review',
+        'last_review'
+    ]
+    
+    # Sort by review count (descending)
+    user_stats = user_stats.sort_values('review_count', ascending=False)
+    
+    # Create meaningful display names with ranking
+    user_options = []
+    user_mapping = {}
+    
+    for _, row in user_stats.iterrows():
+        # Determine user rank
+        if row['review_count'] >= 50:
+            rank = "🔥 Power User"
+        elif row['review_count'] >= 20:
+            rank = "⭐ Active User"
+        elif row['review_count'] >= 5:
+            rank = "👍 Regular User"
+        else:
+            rank = "👶 New User"
+        
+        display_name = (
+            f"{rank} - {row['userId']} "
+            f"({row['review_count']} reviews, "
+            f"avg: {row['avg_rating']:.1f}★)"
+        )
+        
+        user_options.append(display_name)
+        user_mapping[display_name] = row['userId']
+    
+    return user_options, user_mapping
+def prepare_product_dropdown_data(engine):
+    """Prepare data for product dropdown with product titles"""
+    if not hasattr(engine, 'product_stats'):
+        return [], {}
+    
+    product_options = [
+        f"{row['productId']} - {row['title'][:50]}{'...' if len(str(row['title'])) > 50 else ''}"
+        if pd.notna(row['title']) 
+        else row['productId']
+        for _, row in engine.product_stats.iterrows()
+    ]
+    product_mapping = {opt: row['productId'] for opt, (_, row) in zip(product_options, engine.product_stats.iterrows())}
+    
+    return product_options, product_mapping
+
 def evaluate_model(engine, test_size=0.2):
     """Evaluate ALS model performance with improved implementation"""
     try:
@@ -262,6 +325,10 @@ def main():
     if engine is None:
         st.stop()
     
+    # Prepare dropdown data
+    user_options, user_mapping = prepare_user_dropdown_data(engine)
+    product_options, product_mapping = prepare_product_dropdown_data(engine)
+    
     # Sidebar configuration
     st.sidebar.header("Recommendation Options")
     rec_type = st.sidebar.radio(
@@ -291,11 +358,15 @@ def main():
     if rec_type == "User Recommendations":
         st.header("👤 Personalized Recommendations")
         
-        user_id = st.text_input(
-            "Enter User ID", 
-            value="A31KXTOQNTWUVM",
-            help="Input a specific user ID"
+        # User selection dropdown
+        selected_user_option = st.selectbox(
+            "Select a User (sorted by activity level)", 
+            options=user_options,
+            index=0,
+            help="Users sorted by activity level (most active first)"
         )
+        # Extract user ID from the selected option
+        user_id = user_mapping.get(selected_user_option, "A31KXTOQNTWUVM")
         
         if st.button("Get Recommendations", key="user_rec"):
             with st.spinner("Generating recommendations..."):
@@ -337,11 +408,16 @@ def main():
     elif rec_type == "Similar Products":
         st.header("🔍 Find Similar Products")
         
-        product_id = st.text_input(
-            "Enter Product ID", 
-            value="B000EENAE0",
-            help="Input a product ID to find similar products"
+        # Product selection dropdown
+        selected_product_option = st.selectbox(
+            "Select a Product", 
+            options=product_options,
+            index=0,
+            help="Select a product from the dropdown"
         )
+        
+        # Extract product ID from the selected option
+        product_id = product_mapping.get(selected_product_option, "B000EENAE0")
         
         if st.button("Find Similar Products", key="product_rec"):
             with st.spinner("Searching for similar products..."):
